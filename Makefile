@@ -14,6 +14,10 @@ run:
 	@echo "🚀 Running main file"
 	uv run python main.py
 
+unittests:
+	@echo "🧪 Running Python Unittests..."
+	pytest -v --maxfail=1 --disable-warnings
+	@echo "✅ Unittests completed!"
 
 # Download the 100 books from project Gutenberg
 download_books:
