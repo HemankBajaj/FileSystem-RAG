@@ -37,8 +37,8 @@ def test_process_files_creates_chunks():
         assert chunks[0].page_content == "This is a chunk."
         assert "file_path" in chunks[0].metadata
         assert chunks[0].metadata["file_path"] == fake_file_path
-        assert "user" in chunks[0].metadata
-        assert chunks[0].metadata["user"] == "fake_user"
+        assert "user_id" in chunks[0].metadata
+        assert chunks[0].metadata["user_id"] == "fake_user"
         assert "mime_type" in chunks[0].metadata
         assert chunks[0].metadata["mime_type"] == "text"
 

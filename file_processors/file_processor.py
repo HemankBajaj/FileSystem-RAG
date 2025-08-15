@@ -12,18 +12,8 @@ class FileProcessor:
         """Abstract method: should return a list of chunked documents with metadata."""
         raise NotImplementedError("Subclasses should implement this method.")
     
-    def __get_file_metadata(file_path : str):
-        """
-            file_path : data/<user>/<text/image>/file_name
-        """
-
-        file_name = file_path.split('/')
-        metadata_dict = {
-            'file_path' : file_path,
-            'user' : file_name[1],
-            'mime_type' : file_name[2],
-        }
-        return metadata_dict
+    def get_file_metadata(file_path : str):
+        raise NotImplementedError("Subclasses should implement this method.")
     
 if __name__ == "__main__":
     file_processor = FileProcessor()

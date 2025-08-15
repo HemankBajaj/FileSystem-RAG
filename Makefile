@@ -25,3 +25,10 @@ download_books:
 	@bash $(BOOKS_DOWNLOAD_SCRIPT)
 
 clean:
+	@echo "🧹 Cleaning temporary files..."
+	@find . -name "__pycache__" -type d -exec rm -rf {} +
+	@find . -name "*.pyc" -exec rm -f {} +
+
+clean-all: clean
+	@echo "🧹 Cleaning Chroma DB Store"
+	rm -rf chroma_store

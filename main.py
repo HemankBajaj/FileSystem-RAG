@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Ensure INFO messages are shown
 
 file_paths = [
-    "data/user_a/text/11.txt",
+    "data/user_a/text/facts.txt",
+    "data/user_b/text/earth_facts.txt",
     "data/user_a/text/12.txt"
 ]
 
@@ -26,40 +27,49 @@ text_file_processor = TextFileProcessor()
 docs = text_file_processor.process_files(file_paths)
 
 
+# ---------- CONFIG ----------
+persist_directory = "chroma_store"
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-vectordb = Chroma.from_documents(docs, embedding_model, persist_directory="chroma_store")
-retriever = vectordb.as_retriever()
-
-llm_pipeline = pipeline(
-    "text2text-generation",
-    model="google/flan-t5-small",
-    tokenizer="google/flan-t5-small",
-    max_new_tokens=200,
-    device=-1  # -1 for CPU, 0 for GPU
+# Initialize persistent vector DB
+vectordb = Chroma(
+    collection_name="all_users_docs",
+    embedding_function=embedding_model,
+    persist_directory=persist_directory,
 )
 
-llm = HuggingFacePipeline(pipeline=llm_pipeline)
+vectordb.add_documents(docs)
+vectordb.persist()
 
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=retriever,
-    return_source_documents=True
-)
+def get_user_qa(user_id: str):
+    retriever = vectordb.as_retriever(
+        search_kwargs={"k": 5, "filter": {"user_id": user_id}}
+    )
 
-start_time = time.time()
+    llm_pipeline = pipeline(
+        "text2text-generation",
+        model="google/flan-t5-small",
+        tokenizer="google/flan-t5-small",
+        max_new_tokens=200,
+        device=-1  # CPU (set to 0 for GPU)
+    )
+    llm = HuggingFacePipeline(pipeline=llm_pipeline)
 
-query = "What unusual object did the White Rabbit take out of its waistcoat-pocket that made Alice curious enough to follow it?"
-result = qa_chain({"query": query})
+    return RetrievalQA.from_chain_type(
+        llm=llm,
+        retriever=retriever,
+        return_source_documents=True
+    )
 
-end_time = time.time()
 
-print("\nAnswer:", result["result"])
-print("\nSources and Chunks:")
+qa_a = get_user_qa("user_a")
+result_a = qa_a({"query": "What is the speed at which sneeze travels?"})
+print("\n[User A Answer]:", result_a["result"])
+print("[Sources]:", [doc.metadata for doc in result_a["source_documents"]])
+del qa_a, result_a
 
-for doc in result["source_documents"]:
-    print("---- Chunk Text ----")
-    print(doc.page_content[:500], "...")  # print first 500 chars of chunk for brevity
-    print("---- Source Metadata ----")
-    print(doc.metadata)
-    print("\n")
+qa_b = get_user_qa("user_b")
+result_b = qa_b({"query": "How many trees are there on earth?"})
+print("\n[User B Answer]:", result_b["result"])
+print("[Sources]:", [doc.metadata for doc in result_b["source_documents"]])
+

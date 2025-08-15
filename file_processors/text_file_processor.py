@@ -8,7 +8,7 @@ import logging
 class TextFileProcessor(FileProcessor):
     """Processes multiple .txt files into chunked documents with metadata."""
 
-    def __init__(self, chunk_size: int = 2048, chunk_overlap: int = 200):
+    def __init__(self, chunk_size: int = 256, chunk_overlap: int = 50):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -31,10 +31,23 @@ class TextFileProcessor(FileProcessor):
             for chunk in chunks:
                 if not hasattr(chunk, "metadata") or chunk.metadata is None:
                     chunk.metadata = {}
-                chunk.metadata.update(FileProcessor._FileProcessor__get_file_metadata(file_path))
+                chunk.metadata.update(self.get_file_metadata(file_path))
             logging.info(f"[FileProcessor] Text File {file_path} processed with {len(chunks)} chunks")
             all_chunks.extend(chunks)
         return all_chunks
+    
+    def get_file_metadata(self, file_path: str):
+        """
+            file_path : data/<user>/<text/image>/file_name (HARD ASSUMPTION)
+        """
+
+        file_name = file_path.split('/')
+        metadata_dict = {
+            'file_path' : file_path,
+            'user_id' : file_name[1],
+            'mime_type' : "text",
+        }
+        return metadata_dict
 
 
 if __name__ == "__main__":
