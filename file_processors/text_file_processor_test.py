@@ -18,7 +18,7 @@ def test_process_files_creates_chunks():
     fake_document.metadata = {}
 
     fake_chunk = MagicMock()
-    fake_chunk.page_content = "This is a chunk."
+    fake_chunk.page_content = "chunk"
     fake_chunk.metadata = {}
 
     processor = TextFileProcessor(chunk_size=10, chunk_overlap=2)
@@ -34,7 +34,7 @@ def test_process_files_creates_chunks():
 
         # Assertions updated to match __get_file_metadata
         assert len(chunks) == 1
-        assert chunks[0].page_content == "This is a chunk."
+        assert chunks[0].page_content == "chunk"
         assert "file_path" in chunks[0].metadata
         assert chunks[0].metadata["file_path"] == fake_file_path
         assert "user_id" in chunks[0].metadata

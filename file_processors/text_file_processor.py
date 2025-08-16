@@ -3,7 +3,10 @@ from typing import List
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from file_processors.file_processor import FileProcessor
-import logging 
+import logging
+import nltk
+from nltk.corpus import stopwords
+import re
 
 class TextFileProcessor(FileProcessor):
     """Processes multiple .txt files into chunked documents with metadata."""
@@ -15,6 +18,20 @@ class TextFileProcessor(FileProcessor):
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap
         )
+        # Initialize the set of English stop words for efficient lookup
+        self.stop_words = set(stopwords.words('english'))
+
+    def _remove_stop_words(self, text: str) -> str:
+        """Removes stop words and punctuation from a given string."""
+        # Convert to lowercase and remove punctuation
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)
+        
+        # Split text into words and filter out stop words
+        words = text.split()
+        filtered_words = [word for word in words if word not in self.stop_words]
+        
+        return " ".join(filtered_words)
 
     def process_files(self, file_paths_list: List[str]):
         all_chunks = []
@@ -26,12 +43,16 @@ class TextFileProcessor(FileProcessor):
 
             loader = TextLoader(file_path)
             documents = loader.load()
+            for i in range(len(documents)):
+                cleaned_text = self._remove_stop_words(documents[i].page_content)
+                documents[i].page_content = cleaned_text
             chunks = self.text_splitter.split_documents(documents)
 
             for chunk in chunks:
                 if not hasattr(chunk, "metadata") or chunk.metadata is None:
                     chunk.metadata = {}
                 chunk.metadata.update(self.get_file_metadata(file_path))
+                                
             logging.info(f"[FileProcessor] Text File {file_path} processed with {len(chunks)} chunks")
             all_chunks.extend(chunks)
         return all_chunks
@@ -40,7 +61,6 @@ class TextFileProcessor(FileProcessor):
         """
             file_path : data/<user>/<text/image>/file_name (HARD ASSUMPTION)
         """
-
         file_name = file_path.split('/')
         metadata_dict = {
             'file_path' : file_path,
@@ -48,7 +68,6 @@ class TextFileProcessor(FileProcessor):
             'mime_type' : "text",
         }
         return metadata_dict
-
 
 if __name__ == "__main__":
     file_paths = [

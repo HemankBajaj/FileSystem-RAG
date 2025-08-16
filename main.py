@@ -20,7 +20,13 @@ logger.setLevel(logging.INFO)  # Ensure INFO messages are shown
 file_paths = [
     "data/user_a/text/facts.txt",
     "data/user_b/text/earth_facts.txt",
-    "data/user_a/text/12.txt"
+    "data/user_a/text/11.txt",
+    "data/user_a/text/10.txt",
+    # "data/user_a/text/16.txt",
+    # "data/user_a/text/23.txt",
+    # "data/user_a/text/45.txt",
+    # "data/user_a/text/36.txt",
+    # "data/user_a/text/55.txt",
 ]
 
 text_file_processor = TextFileProcessor()
