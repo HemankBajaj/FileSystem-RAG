@@ -11,10 +11,11 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from file_processors.text_file_processor import TextFileProcessor
+from file_processors.image_file_processor import ImageFileProcessor
 
 DATA_DIR = "data"
 SKIP_DIR = "books"
-NUM_PROCESSES = 5  # Number of parallel processes to run
+NUM_PROCESSES = 5
 
 # Redis Configuration
 REDIS_HOST = 'localhost'
@@ -32,6 +33,7 @@ class UserIngestionWorker:
         self.data_dir = os.path.join("data", user_id)
         self.skip_dir = "books"
         self.text_processor = TextFileProcessor()
+        self.image_processor = ImageFileProcessor()
 
         # Connect to Redis
         self.redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
@@ -83,25 +85,29 @@ class UserIngestionWorker:
                 for file in files:
                     file_path = os.path.join(root, file)
                     if not self.has_file_been_published(file_path):
-                        # Chunk the file and get the total count
+                        # Chunk the file
                         if file_path.endswith(".txt"):
                             chunks = self.text_processor.process_files([file_path])
                             total_chunks = len(chunks)
-                            
-                            # Publish each chunk individually, with the total chunk count
                             for chunk in chunks:
                                 self._publish_chunk_to_stream(chunk, total_chunks)
                                 total_chunks_published += 1
 
-                            # Mark the entire file as published only after all its chunks are sent
                             self.mark_file_as_published(file_path)
+                        if file_path.endswith(".png") or file_path.endswith(".jpg"):
+                            chunks = self.image_processor.process_files([file_path])
+                            total_chunks = len(chunks)
+                            for chunk in chunks:
+                                self._publish_chunk_to_stream(chunk, total_chunks)
+                                total_chunks_published += 1
+
+                            self.mark_file_as_published(file_path)
+
                         else:
                             logging.warning(f"[{multiprocessing.current_process().name}] Skipping unsupported file format: {file_path}")
         
         logger.info(f"[{multiprocessing.current_process().name}] Finished publishing new files. Total chunks: {total_chunks_published}")
         return total_chunks_published
-
-# --- Multiprocessing Entry Point and Management ---
 
 def create_user_directory(user_id: str):
     """Creates a data directory for a user."""

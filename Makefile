@@ -16,7 +16,7 @@ run:
 
 unittests:
 	@echo "🧪 Running Python Unittests..."
-	pytest -v --maxfail=1 --disable-warnings
+	uv run pytest -v --maxfail=1 --disable-warnings
 	@echo "✅ Unittests completed!"
 
 # Download the 100 books from project Gutenberg
