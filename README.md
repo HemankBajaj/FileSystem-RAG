@@ -1,16 +1,11 @@
 # FileSystem RAG
 
 This project implements a FileSystem RAG capable of high throughput ingestion (via a fault tolerant event-driven architecture). 
-Realtime ingestion trains stores indexes in a vector index database. This vector index database is used to augment LLM responses by providing information from files stored by a user.
+Realtime ingestion stores indexes in a vector index database. This vector index database is used to augment LLM responses by providing information from files stored by a user.
 ## Setup
 
 ```bash
 uv sync
-```
-
-## Data Setup
-```bash
-pip install foobar
 ```
 
 ## Data Setup
