@@ -12,7 +12,7 @@ class ChromaClient:
         self,
         collection_name: str = "all_users_docs",
         embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-        batch_size: int = 500,
+        batch_size: int = 2000,
         host: str = "127.0.0.1",
         port: int = 8000,
         tenant: str = "default_tenant",
@@ -38,10 +38,11 @@ class ChromaClient:
 
         logging.info(f"[ChromaClient] Adding {len(docs)} documents to Chroma DB in batches of {self.batch_size}...")
         for i in range(0, len(docs), self.batch_size):
+            start = time.time()
             batch = docs[i:i + self.batch_size]
-            logging.info(f"[ChromaClient] Adding batch {i//self.batch_size + 1} with {len(batch)} documents.")
             self.vectordb.add_documents(batch)
-
+            end = time.time()
+            logging.info(f"[ChromaClient] Adding batch {i//self.batch_size + 1}/{len(docs)//self.batch_size + 1} with {len(batch)} documents. Time Taken {end-start} seconds")
         # No persist() in HTTP mode
         logging.info("[ChromaClient] All documents added.")
 

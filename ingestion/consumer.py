@@ -141,31 +141,36 @@ class IngestionConsumer:
 
 
     def run(self):
+        loop_count = 0
         while True:
             try:
-                # 1. Process pending messages first to ensure nothing is stuck
-                self._process_pending_messages()
+                # 1. Occasionally process pending messages (every ~1 min)
+                if loop_count % 60 == 0:  
+                    self._process_pending_messages()
 
-                # 2. Then, read new messages from the stream
+                # 2. Read new messages with smaller batches
                 messages = self.redis_client.xreadgroup(
                     CONSUMER_GROUP,
                     self.consumer_name,
                     {STREAM_KEY: '>'},
                     count=BATCH_SIZE,
-                    block=5000
+                    block=1000
                 )
 
                 if messages and messages[0][1]:
                     message_ids_to_ack = self._process_chunk_batch(messages[0][1])
                     if message_ids_to_ack:
                         self.redis_client.xack(STREAM_KEY, CONSUMER_GROUP, *message_ids_to_ack)
-                        logger.info(f"[Consumer] Acknowledged {len(message_ids_to_ack)} new messages.")
+                        logger.info(f"[Consumer] Acked {len(message_ids_to_ack)} new messages.")
                 else:
-                    logger.info(f"[Consumer] No new messages, blocking for 5 seconds...")
+                    logger.debug("[Consumer] No new messages, waiting...")
 
             except Exception as e:
-                logger.error(f"[Consumer] An error occurred in the consumer loop: {e}")
-                time.sleep(5)
+                logger.error(f"[Consumer] Error in loop: {e}", exc_info=True)
+                time.sleep(2)  # backoff
+
+            loop_count += 1
+
 
 # --------------------------------------------------------------------------------------------------
 
