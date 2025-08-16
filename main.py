@@ -4,6 +4,7 @@ import logging
 from colorama import Fore, Style, init
 
 from file_processors.text_file_processor import TextFileProcessor
+from file_processors.image_file_processor import ImageFileProcessor
 from indexing_and_embedding.chroma_db_client import ChromaClient
 from lookup.lookup import Lookup
 
