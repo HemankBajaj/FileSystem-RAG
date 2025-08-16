@@ -53,8 +53,9 @@ clean:
 	@find . -name "__pycache__" -type d -exec rm -rf {} +
 	@find . -name "*.pyc" -exec rm -f {} +
 
-clean-all: clean clean-file-distribution
-	@echo "🧹 Cleaning Chroma DB Store"
-	rm -rf chroma_store
-	@echo "🧹 Cleaning Redis Data Dump"
-	rm dump.rdb
+# Commenting this out to avoid running by accident
+# clean-all: clean clean-file-distribution
+# 	@echo "🧹 Cleaning Chroma DB Store"
+# 	rm -rf chroma_store
+# 	@echo "🧹 Cleaning Redis Data Dump"
+# 	rm dump.rdb

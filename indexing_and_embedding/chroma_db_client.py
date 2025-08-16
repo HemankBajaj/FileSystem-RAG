@@ -3,9 +3,6 @@ import time
 from chromadb import HttpClient
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.chains import RetrievalQA
-from langchain_huggingface import HuggingFacePipeline
-from transformers import pipeline
 
 class ChromaClient:
     def __init__(
@@ -46,25 +43,9 @@ class ChromaClient:
         # No persist() in HTTP mode
         logging.info("[ChromaClient] All documents added.")
 
-    def get_user_qa(self, user_id: str, model_name="google/flan-t5-small", max_new_tokens=200, device=-1):
+    def get_user_retriever(self, user_id: str, top_k: int = 5):
         logging.info(f"[ChromaClient] Creating QA chain for user_id: {user_id}")
-        start = time.time()
         retriever = self.vectordb.as_retriever(
-            search_kwargs={"k": 5, "filter": {"user_id": user_id}}
+            search_kwargs={"k":top_k, "filter": {"user_id": user_id}}
         )
-        llm_pipeline = pipeline(
-            "text2text-generation",
-            model=model_name,
-            tokenizer=model_name,
-            max_new_tokens=max_new_tokens,
-            device=device
-        )
-        llm = HuggingFacePipeline(pipeline=llm_pipeline)
-
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=retriever,
-            return_source_documents=True
-        )
-        logging.info(f"Time taken to make qa_chain : {time.time()-start:.2f}s")
-        return qa_chain
+        return retriever

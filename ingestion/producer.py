@@ -53,11 +53,11 @@ class UserIngestionWorker:
         key = self.get_published_files_key()
         return self.redis_client.sismember(key, file_path)
 
-    def mark_file_as_published(self, file_path: str):
+    def mark_file_as_published(self, file_path: str, total_chunks_published : int):
         """Add a file to the Redis Set of published files."""
         key = self.get_published_files_key()
         self.redis_client.sadd(key, file_path)
-        logger.info(f"Marked '{file_path}' as published for user '{self.user_id}'.")
+        logger.info(f"Marked '{file_path}' with {total_chunks_published} chunks as published for user '{self.user_id}'.")
 
     def _publish_chunk_to_stream(self, chunk, total_chunks):
         """Adds a new chunk's information to the Redis Stream."""
@@ -71,12 +71,9 @@ class UserIngestionWorker:
         }
         # Removing max len limit here
         self.redis_client.xadd(STREAM_KEY, message)
-        logger.info(f"Published chunk for file '{chunk.metadata.get('file_path')}' to stream.")
 
     def ingest_files(self):
         """Checks a user's directory for new files, chunks them, and publishes the chunks."""
-        logger.info(f"[{multiprocessing.current_process().name}] Checking for new files for user '{self.user_id}'...")
-
         total_chunks_published = 0
         if os.path.isdir(self.data_dir):
             for root, _, files in os.walk(self.data_dir):
@@ -93,20 +90,20 @@ class UserIngestionWorker:
                                 self._publish_chunk_to_stream(chunk, total_chunks)
                                 total_chunks_published += 1
 
-                            self.mark_file_as_published(file_path)
-                        if file_path.endswith(".png") or file_path.endswith(".jpg"):
+                            self.mark_file_as_published(file_path, total_chunks_published)
+                        elif file_path.endswith(".png") or file_path.endswith(".jpg"):
                             chunks = self.image_processor.process_files([file_path])
                             total_chunks = len(chunks)
                             for chunk in chunks:
                                 self._publish_chunk_to_stream(chunk, total_chunks)
                                 total_chunks_published += 1
 
-                            self.mark_file_as_published(file_path)
+                            self.mark_file_as_published(file_path, total_chunks_published)
 
                         else:
                             logging.warning(f"[{multiprocessing.current_process().name}] Skipping unsupported file format: {file_path}")
-        
-        logger.info(f"[{multiprocessing.current_process().name}] Finished publishing new files. Total chunks: {total_chunks_published}")
+        if total_chunks_published > 0:
+            logger.info(f"[{multiprocessing.current_process().name}] Finished publishing new files. Total chunks: {total_chunks_published}")
         return total_chunks_published
 
 def create_user_directory(user_id: str):

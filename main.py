@@ -5,6 +5,7 @@ from colorama import Fore, Style, init
 
 from file_processors.text_file_processor import TextFileProcessor
 from indexing_and_embedding.chroma_db_client import ChromaClient
+from lookup.lookup import Lookup
 
 # Initialize colorama for colored terminal output
 init(autoreset=True)
@@ -22,10 +23,10 @@ chroma_client = ChromaClient(
     embedding_model_name=embedding_model
 )
 
-def get_response_for_user(user_id: str, query: str, debug: bool = True):
-    qa_user = chroma_client.get_user_qa(user_id)
-    result = qa_user.invoke({"query": query})
-    return result
+lookup = Lookup(chroma_client)
+
+def get_response_for_user(user_id: str, query: str, top_k : int = 5, debug: bool = True):
+    return lookup.generate_reponse(user_id, query, top_k)
 
 # Terminal-based chat interface
 def chat_interface():
@@ -35,7 +36,6 @@ def chat_interface():
     print(Fore.GREEN + "Enter your user_id: ")
     user_id = input().strip()
     print(Fore.MAGENTA + f"\nHello, {user_id}! Let's start chatting...\n")
-    qa_user = chroma_client.get_user_qa(user_id)
 
     while True:
         print(Fore.MAGENTA + f"{user_id}, Enter your query > ")
@@ -46,7 +46,7 @@ def chat_interface():
 
         try:
             start = time.time()
-            result = qa_user.invoke({"query": query})
+            result = lookup.generate_reponse(user_id, query, top_k=5, verbose=True)
             end = time.time()
 
             print(Fore.BLUE + "\n[Answer]:" + Fore.WHITE, result['result'])

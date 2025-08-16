@@ -19,7 +19,7 @@ REDIS_PORT = 6379
 STREAM_KEY = 'ingestion_stream_chunks'
 CONSUMER_GROUP = 'ingestion_workers_group'
 CONSUMER_NAME_PREFIX = 'worker'
-NUM_WORKERS = 4
+NUM_WORKERS = 1  # Keeping this as one as I expect there is throttling by db chroma server.
 # Chroma DB Config
 persist_directory = "chroma_store"
 embedding_model = "sentence-transformers/all-MiniLM-L6-v2"
@@ -120,14 +120,14 @@ class IngestionConsumer:
         """Claims and processes pending messages from other consumers."""
         # Use '0-0' as the start ID to claim all old messages
         start_id = '0-0'
-        # Claim up to BATCH_SIZE messages that are older than CLAIM_TIMEOUT_MS
+        # Claim up to 2*BATCH_SIZE messages that are older than CLAIM_TIMEOUT_MS
         claimed_messages = self.redis_client.xautoclaim(
             STREAM_KEY,
             CONSUMER_GROUP,
             self.consumer_name,
             CLAIM_TIMEOUT_MS,
             start_id,
-            count=BATCH_SIZE
+            count=BATCH_SIZE*2
         )
 
         if claimed_messages and claimed_messages[1]:
@@ -144,11 +144,8 @@ class IngestionConsumer:
         loop_count = 0
         while True:
             try:
-                # 1. Occasionally process pending messages (every ~1 min)
                 if loop_count % 60 == 0:  
                     self._process_pending_messages()
-
-                # 2. Read new messages with smaller batches
                 messages = self.redis_client.xreadgroup(
                     CONSUMER_GROUP,
                     self.consumer_name,
@@ -171,8 +168,6 @@ class IngestionConsumer:
 
             loop_count += 1
 
-
-# --------------------------------------------------------------------------------------------------
 
 def start_worker(worker_id):
     worker_name = f"{CONSUMER_NAME_PREFIX}-{worker_id}"

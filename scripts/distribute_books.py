@@ -1,12 +1,10 @@
 # This simulates the file uploading process for our files.
-# Distribute books to each user and wait for 3 minutes before distributing the next book.
+# Distribute books to each user and wait for user input ("ADD") before distributing the next book.
 
 # Vibe-Coded 
 
-
 import os
 import shutil
-import time
 from math import ceil
 
 # Source directory containing books
@@ -15,9 +13,6 @@ SOURCE_DIR = "data/books"
 # Destination directories for users
 USERS = ["user_a", "user_b", "user_c", "user_d", "user_e"]
 DEST_BASE_DIR = "data"
-
-# Interval between rounds (in seconds)
-INTERVAL = 3 * 60  # 3 minutes
 
 # Create user directories if they don't exist
 for user in USERS:
@@ -49,9 +44,16 @@ for r in range(rounds):
             shutil.copy2(src_path, dest_path)
             print(f"Copied '{book}' to {user}/text")
     
-    # Wait only if more rounds left
+    # Wait for user input instead of sleeping
     if r < rounds - 1:
-        print(f"Waiting {INTERVAL/60} minutes before next round...")
-        time.sleep(INTERVAL)
+        while True:
+            cmd = input("Type 'ADD' to distribute the next round of books (or 'EXIT' to quit): ").strip().upper()
+            if cmd == "ADD":
+                break
+            elif cmd == "EXIT":
+                print("Exiting book distribution early.")
+                exit(0)
+            else:
+                print("Invalid command. Please type 'ADD' or 'EXIT'.")
 
 print("\n✅ All books distributed successfully!")
